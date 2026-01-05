@@ -1,0 +1,230 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Perplexity-inspired design system */
+:root {
+  --background: 255 255 255;
+  --foreground: 23 23 23;
+  --muted: 245 245 245;
+  --muted-foreground: 115 115 115;
+  --accent: 32 128 226;
+  --accent-light: 236 246 255;
+  --border: 229 229 229;
+}
+
+.dark {
+  --background: 23 23 23;
+  --foreground: 250 250 250;
+  --muted: 38 38 38;
+  --muted-foreground: 163 163 163;
+  --accent: 96 165 250;
+  --accent-light: 30 41 59;
+  --border: 64 64 64;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar - Perplexity style (thin, subtle) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted-foreground));
+}
+
+/* Hide scrollbar when not hovering */
+.scrollbar-thin:not(:hover)::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Perplexity-style prose */
+.prose-perplexity {
+  @apply leading-7 text-neutral-700 dark:text-neutral-300;
+}
+
+.prose-perplexity p {
+  @apply mb-4 last:mb-0;
+}
+
+.prose-perplexity ul,
+.prose-perplexity ol {
+  @apply my-4 pl-6 space-y-2;
+}
+
+.prose-perplexity li {
+  @apply leading-7;
+}
+
+.prose-perplexity code {
+  @apply bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.prose-perplexity pre {
+  @apply bg-gray-900 dark:bg-gray-950 rounded-lg p-4 my-4 overflow-x-auto;
+}
+
+.prose-perplexity pre code {
+  @apply bg-transparent p-0 text-gray-100;
+}
+
+.prose-perplexity blockquote {
+  @apply border-l-4 border-blue-500 pl-4 italic text-gray-600 dark:text-gray-400 my-4;
+}
+
+.prose-perplexity h1,
+.prose-perplexity h2,
+.prose-perplexity h3 {
+  @apply font-semibold mt-6 mb-3 text-neutral-900 dark:text-neutral-100;
+}
+
+.prose-perplexity strong {
+  @apply font-semibold text-neutral-900 dark:text-neutral-100;
+}
+
+.prose-perplexity h1 {
+  @apply text-2xl;
+}
+
+.prose-perplexity h2 {
+  @apply text-xl;
+}
+
+.prose-perplexity h3 {
+  @apply text-lg;
+}
+
+.prose-perplexity a {
+  @apply text-blue-600 dark:text-blue-400 hover:underline;
+}
+
+.prose-perplexity strong {
+  @apply font-semibold;
+}
+
+/* Animation for typing cursor */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes thinking-dots {
+  0%, 20% { opacity: 0.3; }
+  50% { opacity: 1; }
+  80%, 100% { opacity: 0.3; }
+}
+
+.animate-thinking-dot {
+  animation: thinking-dots 1.4s infinite ease-in-out;
+}
+
+.animate-thinking-dot:nth-child(1) { animation-delay: 0s; }
+.animate-thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.animate-thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* PDF viewer styles */
+.react-pdf__Page__canvas {
+  margin: 0 auto;
+  border-radius: 8px;
+}
+
+.react-pdf__Page__textContent {
+  user-select: text;
+}
+
+.react-pdf__Page__textContent span::selection {
+  background: rgba(32, 128, 226, 0.3);
+}
+
+/* Perplexity-style gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #2080e2 0%, #60a5fa 50%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dark .glass {
+  background: rgba(38, 38, 38, 0.8);
+}
+
+/* Source card hover effect */
+.source-card {
+  @apply transition-all duration-200;
+}
+
+.source-card:hover {
+  @apply shadow-lg -translate-y-0.5;
+}
+
+/* Input focus ring */
+.input-ring {
+  @apply transition-all duration-200;
+}
+
+.input-ring:focus-within {
+  @apply ring-2 ring-blue-500/20 border-blue-500;
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgb(var(--muted)) 25%, 
+    rgb(var(--border)) 50%, 
+    rgb(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
