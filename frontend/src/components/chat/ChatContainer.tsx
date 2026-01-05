@@ -9,12 +9,12 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, generateId } from '@/lib/utils';
 import { useChatStore, usePDFViewerStore, useThemeStore, usePDFListStore } from '@/store';
-import { streamChatMessageDirect } from '@/lib/api';
+import { streamChatMessageDirect, uploadPDF, listPDFs } from '@/lib/api';
 import { ChatMessage, WelcomeScreen } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import type { ChatInputHandle } from './ChatInput';
-import { ToolCallIndicator } from './ToolCallIndicator';
-import { MessageRole, ToolCallType } from '@/types';
+import { MessageRole } from '@/types';
+
 
 interface ChatContainerProps {
   className?: string;
@@ -25,17 +25,15 @@ export function ChatContainer({ className }: ChatContainerProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<ChatInputHandle>(null);
   const secondInputRef = useRef<ChatInputHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     messages,
     isLoading,
-    currentToolCalls,
     error,
     addMessage,
     updateLastMessage,
     appendToLastMessage,
-    addToolCall,
-    updateToolCall,
     clearToolCalls,
     addCitationToLastMessage,
     addUIComponentToLastMessage,
@@ -53,7 +51,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, currentToolCalls]);
+  }, [messages]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -94,6 +92,39 @@ export function ChatContainer({ className }: ChatContainerProps) {
     clearMessages();
     clearPDFs();
   }, [clearMessages, clearPDFs]);
+
+  // Handle PDF upload
+  const handlePDFUpload = async (file: File) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await uploadPDF(file);
+      const pdfs = await listPDFs();
+
+      usePDFListStore.getState().setPDFs(
+        pdfs.map(pdf => ({
+          pdf_id: pdf.pdf_id,
+          filename: pdf.filename,
+          title: pdf.title,
+          page_count: pdf.page_count,
+        }))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Handle file input change
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) handlePDFUpload(file);
+  };
 
   // Handle sending a message
   const handleSendMessage = useCallback(
@@ -138,29 +169,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
           },
           {
             onText: (text, isComplete) => {
-              if (text) {
-                appendToLastMessage(text);
-              }
-              if (isComplete) {
-                updateLastMessage({ isStreaming: false });
-              }
-            },
-            onToolCall: (type, status, message) => {
-              const toolCallId = `${type}-${Date.now()}`;
-              const existingToolCall = currentToolCalls.find(
-                (tc) => tc.type === type
-              );
-              
-              if (existingToolCall) {
-                updateToolCall(existingToolCall.id, { status, message });
-              } else {
-                addToolCall({
-                  id: toolCallId,
-                  type: type as ToolCallType,
-                  status,
-                  message,
-                });
-              }
+              if (text) appendToLastMessage(text);
+              if (isComplete) updateLastMessage({ isStreaming: false });
             },
             onCitation: (citation) => {
               addCitationToLastMessage(citation);
@@ -177,7 +187,6 @@ export function ChatContainer({ className }: ChatContainerProps) {
             },
             onDone: () => {
               updateLastMessage({ isStreaming: false });
-              clearToolCalls();
             },
           }
         );
@@ -198,14 +207,11 @@ export function ChatContainer({ className }: ChatContainerProps) {
       addMessage,
       updateLastMessage,
       appendToLastMessage,
-      addToolCall,
-      updateToolCall,
       clearToolCalls,
       addCitationToLastMessage,
       addUIComponentToLastMessage,
       setLoading,
       setError,
-      currentToolCalls,
     ]
   );
 
@@ -230,6 +236,27 @@ export function ChatContainer({ className }: ChatContainerProps) {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* PDF Upload */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="p-2 rounded-lg text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Upload PDF document"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </button>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
           {/* New Chat */}
           <button
             onClick={handleNewChat}
@@ -296,16 +323,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
               ))}
             </AnimatePresence>
 
-            {/* Tool call indicators */}
-            {currentToolCalls.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4"
-              >
-                <ToolCallIndicator toolCalls={currentToolCalls} />
-              </motion.div>
-            )}
+
 
             {/* Error message */}
             {error && (

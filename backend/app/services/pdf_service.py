@@ -220,26 +220,36 @@ class PDFService:
     
     async def load_existing_pdfs(self):
         """Load metadata for PDFs already in storage."""
+        print(f"Loading existing PDFs from {self.storage_path}")
         if not self.storage_path.exists():
+            print(f"Storage path {self.storage_path} does not exist")
             return
-        
-        for file_path in self.storage_path.glob("*.pdf"):
+
+        pdf_files = list(self.storage_path.glob("*.pdf"))
+        print(f"Found {len(pdf_files)} PDF files: {[f.name for f in pdf_files]}")
+
+        for file_path in pdf_files:
             pdf_id = file_path.stem
+            print(f"Processing PDF {pdf_id} from {file_path}")
             if pdf_id not in self._metadata_cache:
                 try:
                     async with aiofiles.open(file_path, 'rb') as f:
                         content = await f.read()
-                    
+
+                    print(f"Read {len(content)} bytes for PDF {pdf_id}")
                     metadata = await self._process_pdf(
-                        pdf_id, 
-                        file_path, 
+                        pdf_id,
+                        file_path,
                         file_path.name,
                         len(content)
                     )
                     self._metadata_cache[pdf_id] = metadata
                     self._page_content_cache[pdf_id] = metadata.text_content
+                    print(f"Successfully loaded PDF {pdf_id}: {metadata.filename}")
                 except Exception as e:
                     print(f"Error loading PDF {pdf_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
 
 
 # Global PDF service instance (initialized in main.py)

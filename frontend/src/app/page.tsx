@@ -16,9 +16,8 @@ export default function Home() {
     clearPDFs();
     clearMessages();
     closePDF();
-    
-    // Clear backend PDFs
-    clearAllPDFsOnBackend();
+
+    // Note: Backend PDFs are preserved and loaded on startup
   }, [clearPDFs, clearMessages, closePDF]);
 
   return (
