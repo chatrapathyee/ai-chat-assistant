@@ -68,13 +68,12 @@ Instructions:
     async def _search_documents(self, query: str, pdf_service: PDFService, pdf_ids: List[str] = None) -> List[Dict[str, Any]]:
         """Search specified PDFs for relevant content."""
         results = []
-        # Simple keyword extraction
-        words = re.findall(r'\b\w+\b', query.lower())
-        keywords = [w for w in words if len(w) > 2][:5]
+        query_lower = query.lower()
 
         # Get PDFs to search - either specified ones or all if none specified
         pdfs_to_search = []
         if pdf_ids:
+            # If specific PDFs are requested, include content from all their pages
             for pdf_id in pdf_ids:
                 pdf = pdf_service.get_metadata(pdf_id)
                 if pdf:
@@ -83,18 +82,39 @@ Instructions:
             pdfs_to_search = pdf_service.get_all_pdfs()
 
         for pdf in pdfs_to_search:
-            for page_num in range(1, min(5, pdf.page_count + 1)):  # Check first 5 pages
-                page_content = pdf_service.get_page_content(pdf.pdf_id, page_num)
-                if page_content and any(kw in page_content.text.lower() for kw in keywords):
-                    results.append({
-                        'pdf_id': pdf.pdf_id,
-                        'filename': pdf.filename,
-                        'title': pdf.title,
-                        'page': page_num,
-                        'text': page_content.text[:1000]
-                    })
+            # If specific PDFs were requested, include content from all pages
+            # Otherwise, only include pages that match the query
+            should_include_all_pages = pdf_ids is not None and pdf.pdf_id in pdf_ids
 
-        return results[:3]
+            for page_num in range(1, pdf.page_count + 1):
+                page_content = pdf_service.get_page_content(pdf.pdf_id, page_num)
+                if page_content:
+                    if should_include_all_pages:
+                        # Include all pages from requested PDFs
+                        results.append({
+                            'pdf_id': pdf.pdf_id,
+                            'filename': pdf.filename,
+                            'title': pdf.title,
+                            'page': page_num,
+                            'text': page_content.text[:1500]
+                        })
+                    else:
+                        # Only include pages that match the query
+                        text_lower = page_content.text.lower()
+                        if query_lower in text_lower or any(word in text_lower for word in query_lower.split() if len(word) > 2):
+                            results.append({
+                                'pdf_id': pdf.pdf_id,
+                                'filename': pdf.filename,
+                                'title': pdf.title,
+                                'page': page_num,
+                                'text': page_content.text[:1500]
+                            })
+
+        # Sort by relevance (pages with more query matches first)
+        if not pdf_ids:
+            results.sort(key=lambda x: sum(1 for word in query_lower.split() if word in x['text'].lower()), reverse=True)
+
+        return results[:10]  # Allow more results
     
     async def generate_streaming_response(
         self,
@@ -111,6 +131,7 @@ Instructions:
             pdf_service = get_pdf_service()
             if pdf_service.get_all_pdfs():
                 pdf_contexts = await self._search_documents(message, pdf_service, pdf_ids)
+                print(f"DEBUG: Found {len(pdf_contexts)} PDF contexts for query: {message}")
 
                 # Create citations for found content
                 for i, ctx in enumerate(pdf_contexts, 1):
@@ -127,12 +148,15 @@ Instructions:
 
         # Build prompt with context
         context = self._build_context_prompt(pdf_contexts)
+        print(f"DEBUG: Context prompt:\n{context[:500]}...")
+
         history_text = "\n".join([
             f"{'User' if msg.role.value == 'user' else 'Assistant'}: {msg.content}"
             for msg in history[-3:]
         ])
 
         prompt = f"{context}\n\nPrevious conversation:\n{history_text}\n\nQuestion: {message}"
+        print(f"DEBUG: Full prompt length: {len(prompt)}")
 
         try:
             # Stream response from Groq
