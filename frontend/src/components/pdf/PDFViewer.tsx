@@ -63,8 +63,8 @@ export function PDFViewer({ className }: PDFViewerProps) {
     setShowSearchResults(true);
     try {
       const response = await searchPDF(pdfId, searchText.trim());
-      setSearchResults(response.results);
-    } catch (err) {
+      setSearchResults(response);
+    } catch (err: unknown) {
       console.error('Search failed:', err);
       setSearchResults([]);
     } finally {

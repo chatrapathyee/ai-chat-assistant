@@ -122,19 +122,21 @@ interface ChatMessageProps {
   isLast?: boolean;
 }
 
-export function ChatMessage({ message, isLast = false }: ChatMessageProps) {
-  const isUser = message.role === MessageRole.USER;
-  const isStreaming = message.isStreaming;
-  const hasContent = message.content && message.content.trim().length > 0;
-  const hasUIComponents = message.ui_components && message.ui_components.length > 0;
+export const ChatMessage = React.forwardRef<HTMLDivElement, ChatMessageProps>(
+  ({ message, isLast = false }, ref) => {
+    const isUser = message.role === MessageRole.USER;
+    const isStreaming = message.isStreaming;
+    const hasContent = message.content && message.content.trim().length > 0;
+    const hasUIComponents = message.ui_components && message.ui_components.length > 0;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className={cn('mb-6', isUser ? 'mb-4' : 'mb-8')}
-    >
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className={cn('mb-6', isUser ? 'mb-4' : 'mb-8')}
+      >
       {isUser ? (
         // User message - simple, right-aligned text
         <div className="flex justify-end">
@@ -208,7 +210,9 @@ export function ChatMessage({ message, isLast = false }: ChatMessageProps) {
       )}
     </motion.div>
   );
-}
+});
+
+ChatMessage.displayName = 'ChatMessage';
 
 /**
  * Perplexity-style welcome screen with suggestions.

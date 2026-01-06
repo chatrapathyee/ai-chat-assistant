@@ -81,6 +81,12 @@ async def stream_response(job_id: str):
     )
 
 
+@router.options("/stream")
+async def stream_options():
+    """Handle OPTIONS requests for CORS preflight."""
+    return {"message": "OK"}
+
+
 @router.post("/stream")
 async def stream_message_direct(request: ChatRequest):
     """
@@ -95,7 +101,8 @@ async def stream_message_direct(request: ChatRequest):
         async def generate():
             async for chunk in ai_service.generate_streaming_response(
                 request.message,
-                request.history
+                request.history,
+                request.pdf_ids
             ):
                 yield chunk
         

@@ -111,6 +111,7 @@ export interface ChatRequest {
   message: string;
   conversation_id?: string;
   history: ChatMessage[];
+  pdf_ids?: string[];
 }
 
 export interface JobResponse {

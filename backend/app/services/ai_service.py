@@ -65,14 +65,24 @@ Instructions:
         
         return "\n".join(context_parts)
     
-    async def _search_documents(self, query: str, pdf_service: PDFService) -> List[Dict[str, Any]]:
-        """Search all PDFs for relevant content."""
+    async def _search_documents(self, query: str, pdf_service: PDFService, pdf_ids: List[str] = None) -> List[Dict[str, Any]]:
+        """Search specified PDFs for relevant content."""
         results = []
         # Simple keyword extraction
         words = re.findall(r'\b\w+\b', query.lower())
         keywords = [w for w in words if len(w) > 2][:5]
 
-        for pdf in pdf_service.get_all_pdfs():
+        # Get PDFs to search - either specified ones or all if none specified
+        pdfs_to_search = []
+        if pdf_ids:
+            for pdf_id in pdf_ids:
+                pdf = pdf_service.get_metadata(pdf_id)
+                if pdf:
+                    pdfs_to_search.append(pdf)
+        else:
+            pdfs_to_search = pdf_service.get_all_pdfs()
+
+        for pdf in pdfs_to_search:
             for page_num in range(1, min(5, pdf.page_count + 1)):  # Check first 5 pages
                 page_content = pdf_service.get_page_content(pdf.pdf_id, page_num)
                 if page_content and any(kw in page_content.text.lower() for kw in keywords):
@@ -89,7 +99,8 @@ Instructions:
     async def generate_streaming_response(
         self,
         message: str,
-        history: List[ChatMessage]
+        history: List[ChatMessage],
+        pdf_ids: List[str] = None
     ) -> AsyncGenerator[str, None]:
         """Generate AI response with streaming support."""
         pdf_contexts = []
@@ -99,7 +110,7 @@ Instructions:
         try:
             pdf_service = get_pdf_service()
             if pdf_service.get_all_pdfs():
-                pdf_contexts = await self._search_documents(message, pdf_service)
+                pdf_contexts = await self._search_documents(message, pdf_service, pdf_ids)
 
                 # Create citations for found content
                 for i, ctx in enumerate(pdf_contexts, 1):

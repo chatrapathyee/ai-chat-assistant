@@ -64,6 +64,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
     conversation_id: Optional[str] = None
     history: List[ChatMessage] = Field(default_factory=list)
+    pdf_ids: List[str] = Field(default_factory=list)  # PDFs to use for this conversation
 
 
 class PDFUploadResponse(BaseModel):

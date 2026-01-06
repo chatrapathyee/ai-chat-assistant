@@ -42,7 +42,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     clearMessages,
   } = useChatStore();
 
-  const clearPDFs = usePDFListStore((state) => state.clearPDFs);
+  const { pdfs, setPDFs, clearPDFs } = usePDFListStore();
   const isPDFOpen = usePDFViewerStore((state) => state.isOpen);
   const { theme, toggleTheme } = useThemeStore();
 
@@ -102,8 +102,8 @@ export function ChatContainer({ className }: ChatContainerProps) {
       const response = await uploadPDF(file);
       const pdfs = await listPDFs();
 
-      usePDFListStore.getState().setPDFs(
-        pdfs.map(pdf => ({
+      setPDFs(
+        pdfs.map((pdf: any) => ({
           pdf_id: pdf.pdf_id,
           filename: pdf.filename,
           title: pdf.title,
@@ -166,19 +166,20 @@ export function ChatContainer({ className }: ChatContainerProps) {
           {
             message: content,
             history: messages.slice(-10),
+            pdf_ids: pdfs.map(pdf => pdf.pdf_id),
           },
           {
-            onText: (text, isComplete) => {
+            onText: (text: string, isComplete: boolean) => {
               if (text) appendToLastMessage(text);
               if (isComplete) updateLastMessage({ isStreaming: false });
             },
-            onCitation: (citation) => {
+            onCitation: (citation: any) => {
               addCitationToLastMessage(citation);
             },
-            onUIComponent: (component) => {
+            onUIComponent: (component: any) => {
               addUIComponentToLastMessage(component);
             },
-            onError: (errorMsg) => {
+            onError: (errorMsg: string) => {
               setError(errorMsg);
               updateLastMessage({
                 isStreaming: false,
@@ -204,6 +205,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     [
       isLoading,
       messages,
+      pdfs,
       addMessage,
       updateLastMessage,
       appendToLastMessage,
